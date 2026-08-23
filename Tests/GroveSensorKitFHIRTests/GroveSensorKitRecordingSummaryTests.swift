@@ -29,7 +29,7 @@ struct GroveSensorKitRecordingSummaryTests {
         get throws {
             GroveSensorKitFHIRConversionContext(
                 subject: Reference(reference: "Patient/example"),
-                converter: GroveSensorFHIRApplication(
+                converter: SensorFHIRApplication(
                     identifier: try GroveFHIRBusinessIdentifier(
                         system: "https://study.example.org/fhir/identifiers/application",
                         value: "sensor-conformance|0.3.0"

@@ -15,7 +15,7 @@ public import ModelsR4
 
 
 /// Contract-level failures raised before Grove emits a Sensor FHIR resource.
-public enum GroveSensorFHIRRecordError: Error, Equatable, Sendable {
+public enum SensorFHIRRecordError: Error, Equatable, Sendable {
     case emptySourceTypeIdentifier
     case incompleteCode(system: String, code: String)
     case emptySamples
@@ -38,7 +38,7 @@ public enum GroveSensorFHIRRecordError: Error, Equatable, Sendable {
 
 
 /// A complete coded concept used to name a sensor stream or ECG channel.
-public struct GroveSensorFHIRCode: Hashable, Sendable {
+public struct SensorFHIRCode: Hashable, Sendable {
     public let system: String
     public let code: String
     public let display: String?
@@ -49,7 +49,7 @@ public struct GroveSensorFHIRCode: Hashable, Sendable {
               let url = URL(string: system),
               url.scheme != nil,
               url.absoluteString == system else {
-            throw GroveSensorFHIRRecordError.incompleteCode(system: system, code: code)
+            throw SensorFHIRRecordError.incompleteCode(system: system, code: code)
         }
         self.system = system
         self.code = code
@@ -74,7 +74,7 @@ public struct GroveSensorFHIRCode: Hashable, Sendable {
 public struct GroveSensorSampledDataRecord: Sendable {
     public let identifier: GroveFHIRBusinessIdentifier
     public let sourceTypeIdentifier: String
-    public let code: GroveSensorFHIRCode
+    public let code: SensorFHIRCode
     public let start: Date
     public let end: Date
     public let samples: [Double]
@@ -89,7 +89,7 @@ public struct GroveSensorSampledDataRecord: Sendable {
     public init(
         identifier: GroveFHIRBusinessIdentifier,
         sourceTypeIdentifier: String,
-        code: GroveSensorFHIRCode,
+        code: SensorFHIRCode,
         start: Date,
         end: Date,
         samples: [Double],
@@ -118,7 +118,7 @@ public struct GroveSensorSampledDataRecord: Sendable {
     init(
         identifier: GroveFHIRBusinessIdentifier,
         sourceTypeIdentifier: String,
-        code: GroveSensorFHIRCode,
+        code: SensorFHIRCode,
         start: Date,
         end: Date,
         samples: [Double],
@@ -130,35 +130,35 @@ public struct GroveSensorSampledDataRecord: Sendable {
         adapterProfile: FHIRPrimitive<Canonical>?
     ) throws {
         guard !sourceTypeIdentifier.isEmpty else {
-            throw GroveSensorFHIRRecordError.emptySourceTypeIdentifier
+            throw SensorFHIRRecordError.emptySourceTypeIdentifier
         }
         guard !samples.isEmpty else {
-            throw GroveSensorFHIRRecordError.emptySamples
+            throw SensorFHIRRecordError.emptySamples
         }
         guard dimensions > 0, dimensions <= Int(Int32.max) else {
-            throw GroveSensorFHIRRecordError.invalidDimensions(dimensions)
+            throw SensorFHIRRecordError.invalidDimensions(dimensions)
         }
         guard samples.count.isMultiple(of: dimensions) else {
-            throw GroveSensorFHIRRecordError.sampleCountNotDivisibleByDimensions(
+            throw SensorFHIRRecordError.sampleCountNotDivisibleByDimensions(
                 sampleCount: samples.count,
                 dimensions: dimensions
             )
         }
         guard periodMilliseconds.isFinite, periodMilliseconds > 0 else {
-            throw GroveSensorFHIRRecordError.invalidSamplingPeriod(periodMilliseconds)
+            throw SensorFHIRRecordError.invalidSamplingPeriod(periodMilliseconds)
         }
         let frameCount = samples.count / dimensions
         guard start <= end, frameCount == 1 || start < end else {
-            throw GroveSensorFHIRRecordError.invalidEffectivePeriod
+            throw SensorFHIRRecordError.invalidEffectivePeriod
         }
         guard origin.isFinite else {
-            throw GroveSensorFHIRRecordError.nonFiniteSample(index: -1)
+            throw SensorFHIRRecordError.nonFiniteSample(index: -1)
         }
         if let index = samples.firstIndex(where: { !$0.isFinite }) {
-            throw GroveSensorFHIRRecordError.nonFiniteSample(index: index)
+            throw SensorFHIRRecordError.nonFiniteSample(index: index)
         }
         guard !unitCode.isEmpty else {
-            throw GroveSensorFHIRRecordError.incompleteCode(system: Self.ucum, code: unitCode)
+            throw SensorFHIRRecordError.incompleteCode(system: Self.ucum, code: unitCode)
         }
         self.identifier = identifier
         self.sourceTypeIdentifier = sourceTypeIdentifier
@@ -178,23 +178,23 @@ public struct GroveSensorSampledDataRecord: Sendable {
 
 /// One uniformly sampled ECG lead channel, expressed in millivolts.
 public struct GroveSensorECGChannel: Sendable {
-    public let lead: GroveSensorFHIRCode
+    public let lead: SensorFHIRCode
     public let millivolts: [Double]
     public let originMillivolts: Double
 
     public init(
-        lead: GroveSensorFHIRCode,
+        lead: SensorFHIRCode,
         millivolts: [Double],
         originMillivolts: Double = 0
     ) throws {
         guard !millivolts.isEmpty else {
-            throw GroveSensorFHIRRecordError.emptySamples
+            throw SensorFHIRRecordError.emptySamples
         }
         guard originMillivolts.isFinite else {
-            throw GroveSensorFHIRRecordError.nonFiniteSample(index: -1)
+            throw SensorFHIRRecordError.nonFiniteSample(index: -1)
         }
         if let index = millivolts.firstIndex(where: { !$0.isFinite }) {
-            throw GroveSensorFHIRRecordError.nonFiniteSample(index: index)
+            throw SensorFHIRRecordError.nonFiniteSample(index: index)
         }
         self.lead = lead
         self.millivolts = millivolts
@@ -243,34 +243,34 @@ public struct GroveSensorECGRecord: Sendable {
         adapterProfile: FHIRPrimitive<Canonical>?
     ) throws {
         guard !sourceTypeIdentifier.isEmpty else {
-            throw GroveSensorFHIRRecordError.emptySourceTypeIdentifier
+            throw SensorFHIRRecordError.emptySourceTypeIdentifier
         }
         guard start <= end else {
-            throw GroveSensorFHIRRecordError.invalidEffectivePeriod
+            throw SensorFHIRRecordError.invalidEffectivePeriod
         }
         guard periodMilliseconds.isFinite, periodMilliseconds > 0 else {
-            throw GroveSensorFHIRRecordError.invalidSamplingPeriod(periodMilliseconds)
+            throw SensorFHIRRecordError.invalidSamplingPeriod(periodMilliseconds)
         }
         guard !channels.isEmpty else {
-            throw GroveSensorFHIRRecordError.emptyECGChannels
+            throw SensorFHIRRecordError.emptyECGChannels
         }
         let expectedSampleCount = channels[0].millivolts.count
         for (index, channel) in channels.enumerated() where channel.millivolts.count != expectedSampleCount {
-            throw GroveSensorFHIRRecordError.mismatchedECGChannelLength(
+            throw SensorFHIRRecordError.mismatchedECGChannelLength(
                 expected: expectedSampleCount,
                 actual: channel.millivolts.count,
                 channel: index
             )
         }
-        var leads: Set<GroveSensorFHIRCode> = []
+        var leads: Set<SensorFHIRCode> = []
         for channel in channels where !leads.insert(channel.lead).inserted {
-            throw GroveSensorFHIRRecordError.duplicateECGLead(
+            throw SensorFHIRRecordError.duplicateECGLead(
                 system: channel.lead.system,
                 code: channel.lead.code
             )
         }
         guard expectedSampleCount == 1 || start < end else {
-            throw GroveSensorFHIRRecordError.invalidEffectivePeriod
+            throw SensorFHIRRecordError.invalidEffectivePeriod
         }
         self.identifier = identifier
         self.sourceTypeIdentifier = sourceTypeIdentifier
@@ -297,7 +297,7 @@ public struct GroveSensorRecordingDocument: Sendable {
 
     public let identifier: GroveFHIRBusinessIdentifier
     public let sourceTypeIdentifier: String
-    public let type: GroveSensorFHIRCode
+    public let type: SensorFHIRCode
     public let title: String
     public let contentType: String
     public let format: String
@@ -309,7 +309,7 @@ public struct GroveSensorRecordingDocument: Sendable {
     public init(
         identifier: GroveFHIRBusinessIdentifier,
         sourceTypeIdentifier: String,
-        type: GroveSensorFHIRCode,
+        type: SensorFHIRCode,
         title: String,
         contentType: String,
         format: String,
@@ -334,7 +334,7 @@ public struct GroveSensorRecordingDocument: Sendable {
     init(
         identifier: GroveFHIRBusinessIdentifier,
         sourceTypeIdentifier: String,
-        type: GroveSensorFHIRCode,
+        type: SensorFHIRCode,
         title: String,
         contentType: String,
         format: String,
@@ -344,16 +344,16 @@ public struct GroveSensorRecordingDocument: Sendable {
         adapterProfile: FHIRPrimitive<Canonical>?
     ) throws {
         guard !sourceTypeIdentifier.isEmpty else {
-            throw GroveSensorFHIRRecordError.emptySourceTypeIdentifier
+            throw SensorFHIRRecordError.emptySourceTypeIdentifier
         }
         guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw GroveSensorFHIRRecordError.invalidAttachmentTitle
+            throw SensorFHIRRecordError.invalidAttachmentTitle
         }
         guard Self.isValidContentType(contentType) else {
-            throw GroveSensorFHIRRecordError.invalidContentType
+            throw SensorFHIRRecordError.invalidContentType
         }
         guard !format.isEmpty else {
-            throw GroveSensorFHIRRecordError.invalidRecordingFormat
+            throw SensorFHIRRecordError.invalidRecordingFormat
         }
         let bytes: Data
         switch payload {
@@ -361,15 +361,15 @@ public struct GroveSensorRecordingDocument: Sendable {
             bytes = data
         }
         guard !bytes.isEmpty else {
-            throw GroveSensorFHIRRecordError.emptyPayload
+            throw SensorFHIRRecordError.emptyPayload
         }
         if case .sidecar(let path, _) = payload {
             guard Self.isRelativeSidecarPath(path) else {
-                throw GroveSensorFHIRRecordError.invalidSidecarPath(path)
+                throw SensorFHIRRecordError.invalidSidecarPath(path)
             }
         }
         guard rawPayloadAdmission != nil else {
-            throw GroveSensorFHIRRecordError.rawPayloadAdmissionRequired
+            throw SensorFHIRRecordError.rawPayloadAdmissionRequired
         }
         self.identifier = identifier
         self.sourceTypeIdentifier = sourceTypeIdentifier
@@ -413,7 +413,7 @@ public struct GroveSensorRecordingDocument: Sendable {
 
 
 /// One record accepted by the source-neutral Sensor FHIR converter.
-public enum GroveSensorFHIRRecord: Sendable {
+public enum SensorFHIRRecord: Sendable {
     case sampledData(GroveSensorSampledDataRecord)
     case electrocardiogram(GroveSensorECGRecord)
     case recordingDocument(GroveSensorRecordingDocument)

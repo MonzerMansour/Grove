@@ -46,7 +46,7 @@ struct SensorConformanceFixtureTests {
         let converter = GroveSensorKitFHIRConverter()
         let context = GroveSensorKitFHIRConversionContext(
             subject: Reference(reference: "Patient/example"),
-            converter: GroveSensorFHIRApplication(
+            converter: SensorFHIRApplication(
                 identifier: try GroveFHIRBusinessIdentifier(
                     system: "https://grovealliance.org/fhir/testing/identifiers/conformance-application",
                     value: "sensor-conformance|0.3.0"
@@ -55,7 +55,7 @@ struct SensorConformanceFixtureTests {
                 version: "0.3.0"
             ),
             graphIdentifierSystem: "https://grovealliance.org/fhir/testing/identifiers/conformance-graph",
-            recordingDevice: GroveSensorFHIRRecordingDevice(
+            recordingDevice: SensorFHIRRecordingDevice(
                 identifier: try GroveFHIRBusinessIdentifier(
                     system: "https://grovealliance.org/fhir/testing/identifiers/conformance-recording-device",
                     value: "sensor-fixture-device"

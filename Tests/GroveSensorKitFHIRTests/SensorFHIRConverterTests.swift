@@ -17,15 +17,15 @@ import Testing
 
 
 @Suite
-struct GroveSensorFHIRConverterTests {
+struct SensorFHIRConverterTests {
     private static let start = Date(timeIntervalSince1970: 1_787_009_400)
     private static let subject = Reference(reference: "Patient/example")
 
-    private static var context: GroveSensorFHIRConversionContext {
+    private static var context: SensorFHIRConversionContext {
         get throws {
-            GroveSensorFHIRConversionContext(
+            SensorFHIRConversionContext(
                 subject: Self.subject,
-                converter: GroveSensorFHIRApplication(
+                converter: SensorFHIRApplication(
                     identifier: try GroveFHIRBusinessIdentifier(
                         system: "https://study.example.org/fhir/identifiers/application",
                         value: "org.grovealliance.conformance-fixture|0.3.0"
@@ -34,7 +34,7 @@ struct GroveSensorFHIRConverterTests {
                     version: "0.3.0"
                 ),
                 graphIdentifierSystem: "https://study.example.org/fhir/identifiers/sensor-graph",
-                recordingDevice: GroveSensorFHIRRecordingDevice(
+                recordingDevice: SensorFHIRRecordingDevice(
                     identifier: try GroveFHIRBusinessIdentifier(
                         system: "https://study.example.org/fhir/identifiers/recording-device",
                         value: "watch-42"
@@ -57,7 +57,7 @@ struct GroveSensorFHIRConverterTests {
                 value: "accelerometer-session-1"
             ),
             sourceTypeIdentifier: "SRSensor.accelerometer",
-            code: GroveSensorFHIRCode(
+            code: SensorFHIRCode(
                 system: "https://grovealliance.org/fhir/sensorkit/CodeSystem/sensorkit-sample-type",
                 code: "accelerometer",
                 display: "Accelerometer"
@@ -81,7 +81,7 @@ struct GroveSensorFHIRConverterTests {
                 value: "ambient-light-session-1"
             ),
             sourceTypeIdentifier: "SRSensor.ambientLightSensor",
-            type: GroveSensorFHIRCode(
+            type: SensorFHIRCode(
                 system: "https://grovealliance.org/fhir/sensorkit/CodeSystem/sensorkit-sample-type",
                 code: "ambient-light",
                 display: "Ambient light recording"
@@ -96,8 +96,8 @@ struct GroveSensorFHIRConverterTests {
 
     @Test
     func sampledDataGraphUsesBusinessIdentityAndInternalUUIDReferences() throws {
-        let first = try GroveSensorFHIRConverter().convert(.sampledData(Self.sampledData()), context: Self.context)
-        let second = try GroveSensorFHIRConverter().convert(.sampledData(Self.sampledData()), context: Self.context)
+        let first = try SensorFHIRConverter().convert(.sampledData(Self.sampledData()), context: Self.context)
+        let second = try SensorFHIRConverter().convert(.sampledData(Self.sampledData()), context: Self.context)
         let entries = try #require(first.bundle.entry)
         guard case .observation(let observation) = first.primaryResource else {
             Issue.record("Expected a sampled-data Observation")
@@ -146,14 +146,14 @@ struct GroveSensorFHIRConverterTests {
     @Test
     func repositoryIDsAreAppliedOnlyWhenExplicitlyAssigned() throws {
         let base = try Self.context
-        let context = GroveSensorFHIRConversionContext(
+        let context = SensorFHIRConversionContext(
             subject: base.subject,
             converter: base.converter,
             graphIdentifierSystem: base.graphIdentifierSystem,
             recordingDevice: base.recordingDevice,
             issuedAt: base.issuedAt,
             recordedAt: base.recordedAt,
-            repositoryIDs: GroveSensorFHIRRepositoryIDs(
+            repositoryIDs: SensorFHIRRepositoryIDs(
                 bundle: try GroveFHIRRepositoryID("bundle-1"),
                 record: try GroveFHIRRepositoryID("observation-1"),
                 recordingDevice: try GroveFHIRRepositoryID("device-1"),
@@ -161,7 +161,7 @@ struct GroveSensorFHIRConverterTests {
                 provenance: try GroveFHIRRepositoryID("provenance-1")
             )
         )
-        let conversion = try GroveSensorFHIRConverter().convert(
+        let conversion = try SensorFHIRConverter().convert(
             .sampledData(Self.sampledData()),
             context: context
         )
@@ -179,7 +179,7 @@ struct GroveSensorFHIRConverterTests {
 
     @Test
     func recordingDocumentPreservesExactlyOnePayloadLocation() throws {
-        let conversion = try GroveSensorFHIRConverter().convert(
+        let conversion = try SensorFHIRConverter().convert(
             .recordingDocument(Self.recordingDocument()),
             context: Self.context
         )
@@ -210,7 +210,7 @@ struct GroveSensorFHIRConverterTests {
     func rawPayloadAdmissionIsAcceptedButNeverSerialized(
         _ admission: GroveSensorRawPayloadAdmission
     ) throws {
-        let conversion = try GroveSensorFHIRConverter().convert(
+        let conversion = try SensorFHIRConverter().convert(
             .recordingDocument(Self.recordingDocument(rawPayloadAdmission: admission)),
             context: Self.context
         )
@@ -228,20 +228,20 @@ struct GroveSensorFHIRConverterTests {
     @Test
     func batchConversionReportsEveryFailureWithoutDroppingInput() throws {
         let base = try Self.context
-        let context = GroveSensorFHIRConversionContext(
+        let context = SensorFHIRConversionContext(
             subject: base.subject,
             converter: base.converter,
             graphIdentifierSystem: base.graphIdentifierSystem,
             recordingDevice: base.recordingDevice,
             issuedAt: base.issuedAt,
             recordedAt: base.recordedAt,
-            repositoryIDs: GroveSensorFHIRRepositoryIDs(
+            repositoryIDs: SensorFHIRRepositoryIDs(
                 provenance: try GroveFHIRRepositoryID("provenance-1")
             )
         )
         let sampledData = try Self.sampledData()
         let document = try Self.recordingDocument()
-        let result = GroveSensorFHIRConverter().convert(
+        let result = SensorFHIRConverter().convert(
             [.sampledData(sampledData), .recordingDocument(document)],
             context: context
         )
@@ -260,9 +260,9 @@ struct GroveSensorFHIRConverterTests {
             system: "https://study.example.org/fhir/identifiers/sensorkit-record",
             value: "invalid-record"
         )
-        let code = try GroveSensorFHIRCode(system: "http://loinc.org", code: "8867-4")
+        let code = try SensorFHIRCode(system: "http://loinc.org", code: "8867-4")
 
-        #expect(throws: GroveSensorFHIRRecordError.emptySamples) {
+        #expect(throws: SensorFHIRRecordError.emptySamples) {
             try GroveSensorSampledDataRecord(
                 identifier: identifier,
                 sourceTypeIdentifier: "SRSensor.heartRate",
@@ -274,7 +274,7 @@ struct GroveSensorFHIRConverterTests {
                 unitCode: "/min"
             )
         }
-        #expect(throws: GroveSensorFHIRRecordError.sampleCountNotDivisibleByDimensions(
+        #expect(throws: SensorFHIRRecordError.sampleCountNotDivisibleByDimensions(
             sampleCount: 2,
             dimensions: 3
         )) {
@@ -290,10 +290,10 @@ struct GroveSensorFHIRConverterTests {
                 unitCode: "m/s2"
             )
         }
-        #expect(throws: GroveSensorFHIRRecordError.nonFiniteSample(index: 1)) {
+        #expect(throws: SensorFHIRRecordError.nonFiniteSample(index: 1)) {
             try GroveSensorECGChannel(lead: code, millivolts: [0, .infinity])
         }
-        #expect(throws: GroveSensorFHIRRecordError.invalidSidecarPath("../outside.json")) {
+        #expect(throws: SensorFHIRRecordError.invalidSidecarPath("../outside.json")) {
             try GroveSensorRecordingDocument(
                 identifier: identifier,
                 sourceTypeIdentifier: "SRSensor.ambientLightSensor",
@@ -305,7 +305,7 @@ struct GroveSensorFHIRConverterTests {
                 rawPayloadAdmission: .callerAuthorizedOpaquePayload
             )
         }
-        #expect(throws: GroveSensorFHIRRecordError.invalidRecordingFormat) {
+        #expect(throws: SensorFHIRRecordError.invalidRecordingFormat) {
             try GroveSensorRecordingDocument(
                 identifier: identifier,
                 sourceTypeIdentifier: "SRSensor.ambientLightSensor",
@@ -317,7 +317,7 @@ struct GroveSensorFHIRConverterTests {
                 rawPayloadAdmission: .callerAuthorizedOpaquePayload
             )
         }
-        #expect(throws: GroveSensorFHIRRecordError.rawPayloadAdmissionRequired) {
+        #expect(throws: SensorFHIRRecordError.rawPayloadAdmissionRequired) {
             try GroveSensorRecordingDocument(
                 identifier: identifier,
                 sourceTypeIdentifier: "SRSensor.ambientLightSensor",

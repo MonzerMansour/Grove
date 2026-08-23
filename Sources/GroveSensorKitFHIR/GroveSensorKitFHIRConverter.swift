@@ -46,9 +46,9 @@ public struct GroveSensorKitFHIRRepositoryIDs: Hashable, Sendable {
 /// Explicit deployment, formatting, and audit inputs for one deterministic graph.
 public struct GroveSensorKitFHIRConversionContext: Sendable {
     public let subject: Reference
-    public let converter: GroveSensorFHIRApplication
+    public let converter: SensorFHIRApplication
     public let graphIdentifierSystem: String
-    public let recordingDevice: GroveSensorFHIRRecordingDevice?
+    public let recordingDevice: SensorFHIRRecordingDevice?
     public let converterWasGateway: Bool
     public let sourceTimeZone: TimeZone
     public let issuedAt: Date
@@ -58,9 +58,9 @@ public struct GroveSensorKitFHIRConversionContext: Sendable {
 
     public init(
         subject: Reference,
-        converter: GroveSensorFHIRApplication,
+        converter: SensorFHIRApplication,
         graphIdentifierSystem: String,
-        recordingDevice: GroveSensorFHIRRecordingDevice? = nil,
+        recordingDevice: SensorFHIRRecordingDevice? = nil,
         converterWasGateway: Bool = false,
         sourceTimeZone: TimeZone,
         issuedAt: Date,
@@ -423,7 +423,7 @@ extension GroveSensorKitFHIRConverter {
         }
     }
 
-    private static func applicationDevice(_ application: GroveSensorFHIRApplication) -> Device {
+    private static func applicationDevice(_ application: SensorFHIRApplication) -> Device {
         var device = Device()
         device.meta = Meta(profile: [GroveFHIRProfile.groveApplicationDevice])
         device.identifier = [application.identifier.fhirIdentifier]
@@ -444,7 +444,7 @@ extension GroveSensorKitFHIRConverter {
         return device
     }
 
-    private static func recordingDevice(_ source: GroveSensorFHIRRecordingDevice) -> Device {
+    private static func recordingDevice(_ source: SensorFHIRRecordingDevice) -> Device {
         var device = Device()
         device.meta = Meta(profile: [GroveFHIRProfile.groveRecordingDevice])
         device.identifier = [source.identifier.fhirIdentifier]

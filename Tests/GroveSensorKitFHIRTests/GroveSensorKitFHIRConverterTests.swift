@@ -31,7 +31,7 @@ struct GroveSensorKitFHIRConverterTests {
         get throws {
             GroveSensorKitFHIRConversionContext(
                 subject: Reference(reference: "Patient/example"),
-                converter: GroveSensorFHIRApplication(
+                converter: SensorFHIRApplication(
                     identifier: try GroveFHIRBusinessIdentifier(
                         system: "https://study.example.org/fhir/identifiers/application",
                         value: "sensor-conformance|0.3.0"
@@ -40,7 +40,7 @@ struct GroveSensorKitFHIRConverterTests {
                     version: "0.3.0"
                 ),
                 graphIdentifierSystem: "https://study.example.org/fhir/identifiers/sensor-graph",
-                recordingDevice: GroveSensorFHIRRecordingDevice(
+                recordingDevice: SensorFHIRRecordingDevice(
                     identifier: try GroveFHIRBusinessIdentifier(
                         system: "https://study.example.org/fhir/identifiers/device",
                         value: "watch-42"

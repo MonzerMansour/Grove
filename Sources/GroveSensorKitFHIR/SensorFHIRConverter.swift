@@ -17,7 +17,7 @@ public import ModelsR4
 
 
 /// Product identity of the application performing a Sensor-to-FHIR conversion.
-public struct GroveSensorFHIRApplication: Hashable, Sendable {
+public struct SensorFHIRApplication: Hashable, Sendable {
     public let identifier: GroveFHIRBusinessIdentifier
     public let name: String
     public let version: String?
@@ -31,7 +31,7 @@ public struct GroveSensorFHIRApplication: Hashable, Sendable {
 
 
 /// Identity and descriptive fields of the physical recording device, when known.
-public struct GroveSensorFHIRRecordingDevice: Hashable, Sendable {
+public struct SensorFHIRRecordingDevice: Hashable, Sendable {
     public let identifier: GroveFHIRBusinessIdentifier
     public let name: String?
     public let manufacturer: String?
@@ -52,7 +52,7 @@ public struct GroveSensorFHIRRecordingDevice: Hashable, Sendable {
 
 
 /// Optional repository-assigned logical ids for one Sensor exchange graph.
-public struct GroveSensorFHIRRepositoryIDs: Hashable, Sendable {
+public struct SensorFHIRRepositoryIDs: Hashable, Sendable {
     public let bundle: GroveFHIRRepositoryID?
     public let record: GroveFHIRRepositoryID?
     public let recordingDevice: GroveFHIRRepositoryID?
@@ -76,27 +76,27 @@ public struct GroveSensorFHIRRepositoryIDs: Hashable, Sendable {
 
 
 /// Explicit deployment and audit inputs used to build one reproducible graph.
-public struct GroveSensorFHIRConversionContext: Sendable {
+public struct SensorFHIRConversionContext: Sendable {
     public let subject: Reference
-    public let converter: GroveSensorFHIRApplication
+    public let converter: SensorFHIRApplication
     public let graphIdentifierSystem: String
-    public let recordingDevice: GroveSensorFHIRRecordingDevice?
+    public let recordingDevice: SensorFHIRRecordingDevice?
     public let converterWasGateway: Bool
     public let issuedAt: Date
     public let recordedAt: Date
     public let researchStudies: [Reference]
-    public let repositoryIDs: GroveSensorFHIRRepositoryIDs
+    public let repositoryIDs: SensorFHIRRepositoryIDs
 
     public init(
         subject: Reference,
-        converter: GroveSensorFHIRApplication,
+        converter: SensorFHIRApplication,
         graphIdentifierSystem: String,
-        recordingDevice: GroveSensorFHIRRecordingDevice? = nil,
+        recordingDevice: SensorFHIRRecordingDevice? = nil,
         converterWasGateway: Bool = false,
         issuedAt: Date,
         recordedAt: Date,
         researchStudies: [Reference] = [],
-        repositoryIDs: GroveSensorFHIRRepositoryIDs = .init()
+        repositoryIDs: SensorFHIRRepositoryIDs = .init()
     ) {
         self.subject = subject
         self.converter = converter
@@ -112,7 +112,7 @@ public struct GroveSensorFHIRConversionContext: Sendable {
 
 
 /// Complete business identities of one emitted Sensor exchange graph.
-public struct GroveSensorFHIRGraphIdentifiers: Hashable, Sendable {
+public struct SensorFHIRGraphIdentifiers: Hashable, Sendable {
     public let bundle: GroveFHIRBusinessIdentifier
     public let record: GroveFHIRBusinessIdentifier
     public let recordingDevice: GroveFHIRBusinessIdentifier?
@@ -122,18 +122,18 @@ public struct GroveSensorFHIRGraphIdentifiers: Hashable, Sendable {
 
 
 /// The typed primary FHIR resource emitted for a Sensor record.
-public enum GroveSensorFHIRPrimaryResource: Sendable {
+public enum SensorFHIRPrimaryResource: Sendable {
     case observation(Observation)
     case recordingDocument(DocumentReference)
 }
 
 
 /// One complete Sensor conversion graph and collection Bundle.
-public struct GroveSensorFHIRConversion: Sendable {
+public struct SensorFHIRConversion: Sendable {
     public let sourceIdentifier: Identifier
     public let sourceTypeIdentifier: String
-    public let graphIdentifiers: GroveSensorFHIRGraphIdentifiers
-    public let primaryResource: GroveSensorFHIRPrimaryResource
+    public let graphIdentifiers: SensorFHIRGraphIdentifiers
+    public let primaryResource: SensorFHIRPrimaryResource
     public let recordingDevice: Device?
     public let converterApplication: Device
     public let provenance: Provenance?
@@ -142,7 +142,7 @@ public struct GroveSensorFHIRConversion: Sendable {
 
 
 /// Why one source record could not be converted.
-public enum GroveSensorFHIRConversionError: Error, Equatable, Sendable {
+public enum SensorFHIRConversionError: Error, Equatable, Sendable {
     case invalidConverterApplication(String)
     case invalidExchangeIdentity(String)
     case repositoryIDWithoutRecordingDevice
@@ -152,66 +152,66 @@ public enum GroveSensorFHIRConversionError: Error, Equatable, Sendable {
 
 
 /// A typed failure for one record; batch conversion never drops input silently.
-public struct GroveSensorFHIRRecordFailure: Error, Equatable, Sendable {
+public struct SensorFHIRRecordFailure: Error, Equatable, Sendable {
     public let sourceIdentifier: GroveFHIRBusinessIdentifier
     public let sourceTypeIdentifier: String
-    public let reason: GroveSensorFHIRConversionError
+    public let reason: SensorFHIRConversionError
 }
 
 
 /// Explicit successes and failures from a batch conversion.
-public struct GroveSensorFHIRBatchResult: Sendable {
-    public let conversions: [GroveSensorFHIRConversion]
-    public let failures: [GroveSensorFHIRRecordFailure]
+public struct SensorFHIRBatchResult: Sendable {
+    public let conversions: [SensorFHIRConversion]
+    public let failures: [SensorFHIRRecordFailure]
 }
 
 
 /// Builds source-neutral R4 graphs for sampled data, ECG, and native recordings.
-public struct GroveSensorFHIRConverter: Sendable {
+public struct SensorFHIRConverter: Sendable {
     public init() {}
 
     public func convert(
-        _ record: GroveSensorFHIRRecord,
-        context: GroveSensorFHIRConversionContext
-    ) throws -> GroveSensorFHIRConversion {
+        _ record: SensorFHIRRecord,
+        context: SensorFHIRConversionContext
+    ) throws -> SensorFHIRConversion {
         do {
             return try Self.convertRecord(record, context: context)
-        } catch let error as GroveSensorFHIRConversionError {
+        } catch let error as SensorFHIRConversionError {
             throw error
         } catch let error as GroveFHIRExchangeIdentityError {
-            throw GroveSensorFHIRConversionError.invalidExchangeIdentity(String(describing: error))
+            throw SensorFHIRConversionError.invalidExchangeIdentity(String(describing: error))
         }
     }
 
     public func convert<S: Sequence>(
         _ records: S,
-        context: GroveSensorFHIRConversionContext
-    ) -> GroveSensorFHIRBatchResult where S.Element == GroveSensorFHIRRecord {
-        var conversions: [GroveSensorFHIRConversion] = []
-        var failures: [GroveSensorFHIRRecordFailure] = []
+        context: SensorFHIRConversionContext
+    ) -> SensorFHIRBatchResult where S.Element == SensorFHIRRecord {
+        var conversions: [SensorFHIRConversion] = []
+        var failures: [SensorFHIRRecordFailure] = []
         for record in records {
             do {
                 conversions.append(try convert(record, context: context))
-            } catch let reason as GroveSensorFHIRConversionError {
-                failures.append(GroveSensorFHIRRecordFailure(
+            } catch let reason as SensorFHIRConversionError {
+                failures.append(SensorFHIRRecordFailure(
                     sourceIdentifier: record.identifier,
                     sourceTypeIdentifier: record.sourceTypeIdentifier,
                     reason: reason
                 ))
             } catch {
-                failures.append(GroveSensorFHIRRecordFailure(
+                failures.append(SensorFHIRRecordFailure(
                     sourceIdentifier: record.identifier,
                     sourceTypeIdentifier: record.sourceTypeIdentifier,
                     reason: .invalidExchangeIdentity(String(describing: error))
                 ))
             }
         }
-        return GroveSensorFHIRBatchResult(conversions: conversions, failures: failures)
+        return SensorFHIRBatchResult(conversions: conversions, failures: failures)
     }
 }
 
 
-extension GroveSensorFHIRConverter {
+extension SensorFHIRConverter {
     private static let mdc: FHIRPrimitive<FHIRURI> = "urn:iso:std:iso:11073:10101"
     private static let ucum: FHIRPrimitive<FHIRURI> = "http://unitsofmeasure.org"
     private static let participantType: FHIRPrimitive<FHIRURI> =
@@ -220,9 +220,9 @@ extension GroveSensorFHIRConverter {
         "http://terminology.hl7.org/CodeSystem/iso-21089-lifecycle"
 
     private static func convertRecord(
-        _ record: GroveSensorFHIRRecord,
-        context: GroveSensorFHIRConversionContext
-    ) throws -> GroveSensorFHIRConversion {
+        _ record: SensorFHIRRecord,
+        context: SensorFHIRConversionContext
+    ) throws -> SensorFHIRConversion {
         try validate(context: context)
         let bundleIdentity = try derivedIdentity(
             role: "exchange-bundle",
@@ -298,7 +298,7 @@ extension GroveSensorFHIRConverter {
         )
         bundle.id = context.repositoryIDs.bundle?.primitive
 
-        let retainedPrimary: GroveSensorFHIRPrimaryResource
+        let retainedPrimary: SensorFHIRPrimaryResource
         switch primaryResource {
         case .observation(var observation):
             observation.id = context.repositoryIDs.record?.primitive
@@ -307,10 +307,10 @@ extension GroveSensorFHIRConverter {
             document.id = context.repositoryIDs.record?.primitive
             retainedPrimary = .recordingDocument(document)
         }
-        return GroveSensorFHIRConversion(
+        return SensorFHIRConversion(
             sourceIdentifier: record.identifier.fhirIdentifier,
             sourceTypeIdentifier: record.sourceTypeIdentifier,
-            graphIdentifiers: GroveSensorFHIRGraphIdentifiers(
+            graphIdentifiers: SensorFHIRGraphIdentifiers(
                 bundle: bundleIdentity,
                 record: record.identifier,
                 recordingDevice: context.recordingDevice?.identifier,
@@ -325,16 +325,16 @@ extension GroveSensorFHIRConverter {
         )
     }
 
-    private static func validate(context: GroveSensorFHIRConversionContext) throws {
+    private static func validate(context: SensorFHIRConversionContext) throws {
         guard !context.converter.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw GroveSensorFHIRConversionError.invalidConverterApplication("name")
+            throw SensorFHIRConversionError.invalidConverterApplication("name")
         }
         if context.converter.version?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true {
-            throw GroveSensorFHIRConversionError.invalidConverterApplication("version")
+            throw SensorFHIRConversionError.invalidConverterApplication("version")
         }
         _ = try GroveFHIRBusinessIdentifier(system: context.graphIdentifierSystem, value: "validation")
         if context.repositoryIDs.recordingDevice != nil, context.recordingDevice == nil {
-            throw GroveSensorFHIRConversionError.repositoryIDWithoutRecordingDevice
+            throw SensorFHIRConversionError.repositoryIDWithoutRecordingDevice
         }
     }
 
@@ -349,11 +349,11 @@ extension GroveSensorFHIRConverter {
     }
 
     private static func primaryResource(
-        _ record: GroveSensorFHIRRecord,
-        context: GroveSensorFHIRConversionContext,
+        _ record: SensorFHIRRecord,
+        context: SensorFHIRConversionContext,
         recordingDeviceURL: String?,
         converterURL: String
-    ) throws -> GroveSensorFHIRPrimaryResource {
+    ) throws -> SensorFHIRPrimaryResource {
         switch record {
         case .sampledData(let record):
             return .observation(try observation(
@@ -381,7 +381,7 @@ extension GroveSensorFHIRConverter {
 
     private static func observation(
         _ record: GroveSensorSampledDataRecord,
-        context: GroveSensorFHIRConversionContext,
+        context: SensorFHIRConversionContext,
         recordingDeviceURL: String?,
         converterURL: String
     ) throws -> Observation {
@@ -410,7 +410,7 @@ extension GroveSensorFHIRConverter {
 
     private static func observation(
         _ record: GroveSensorECGRecord,
-        context: GroveSensorFHIRConversionContext,
+        context: SensorFHIRConversionContext,
         recordingDeviceURL: String?,
         converterURL: String
     ) throws -> Observation {
@@ -451,7 +451,7 @@ extension GroveSensorFHIRConverter {
 
     private static func document(
         _ record: GroveSensorRecordingDocument,
-        context: GroveSensorFHIRConversionContext,
+        context: SensorFHIRConversionContext,
         recordingDeviceURL: String?,
         converterURL: String
     ) throws -> DocumentReference {
@@ -524,7 +524,7 @@ extension GroveSensorFHIRConverter {
             bytes = data
         }
         guard let size = Int32(exactly: bytes.count) else {
-            throw GroveSensorFHIRConversionError.payloadTooLarge(byteCount: bytes.count)
+            throw SensorFHIRConversionError.payloadTooLarge(byteCount: bytes.count)
         }
         var attachment = Attachment(
             contentType: record.contentType.asFHIRStringPrimitive(),
@@ -542,7 +542,7 @@ extension GroveSensorFHIRConverter {
     }
 
     private static func contextExtensions(
-        _ context: GroveSensorFHIRConversionContext,
+        _ context: SensorFHIRConversionContext,
         converterURL: String
     ) -> [Extension]? {
         var extensions = context.researchStudies.map { study in
@@ -557,7 +557,7 @@ extension GroveSensorFHIRConverter {
         return extensions.isEmpty ? nil : extensions
     }
 
-    private static func applicationDevice(_ application: GroveSensorFHIRApplication) -> Device {
+    private static func applicationDevice(_ application: SensorFHIRApplication) -> Device {
         var device = Device()
         device.meta = Meta(profile: [GroveFHIRProfile.groveApplicationDevice])
         device.identifier = [application.identifier.fhirIdentifier]
@@ -578,7 +578,7 @@ extension GroveSensorFHIRConverter {
         return device
     }
 
-    private static func recordingDevice(_ source: GroveSensorFHIRRecordingDevice) -> Device {
+    private static func recordingDevice(_ source: SensorFHIRRecordingDevice) -> Device {
         var device = Device()
         device.meta = Meta(profile: [GroveFHIRProfile.groveRecordingDevice])
         device.identifier = [source.identifier.fhirIdentifier]
