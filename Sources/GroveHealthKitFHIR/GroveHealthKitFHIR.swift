@@ -80,6 +80,10 @@ public enum GroveHealthKitFHIRError: Error, Equatable, Sendable {
     /// A business identifier, deterministic fullUrl, or repository id was invalid.
     case invalidExchangeIdentity(String)
     /// An unexpected non-domain error occurred while converting one record in a batch.
+    /// A dependency raised a failure this domain does not model, named by type.
+    ///
+    /// Only the type is carried: a failing FHIR date conversion describes itself with the exact
+    /// instant it could not convert, and that instant identifies a participant.
     case unexpectedConversionFailure(String)
 }
 
@@ -94,7 +98,7 @@ extension GroveHealthKitFHIRError {
         case let error as GroveFHIRExchangeIdentityError:
             self = .invalidExchangeIdentity(String(describing: error))
         default:
-            self = .unexpectedConversionFailure(String(describing: error))
+            self = .unexpectedConversionFailure(String(reflecting: type(of: error)))
         }
     }
 }

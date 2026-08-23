@@ -19,235 +19,6 @@ public import HealthKit
 public import ModelsR4
 
 
-/// Product identity of the application performing a HealthKit-to-FHIR conversion.
-public struct HealthKitFHIRApplication: Hashable, Sendable {
-    /// The identity of the running application, read from its main bundle.
-    ///
-    /// Requires a bundle identifier, so it is unavailable in bare test runners; pass explicit
-    /// values there instead.
-    public static var main: HealthKitFHIRApplication {
-        let bundle = Bundle.main
-        guard let identifier = bundle.bundleIdentifier else {
-            preconditionFailure("Bundle.main carries no bundle identifier; supply an explicit HealthKitFHIRApplication.")
-        }
-        let info = bundle.infoDictionary ?? [:]
-        let name = (info["CFBundleDisplayName"] ?? info["CFBundleName"]) as? String ?? identifier
-        let version = info["CFBundleShortVersionString"] as? String ?? "0"
-        let build = (info["CFBundleVersion"] as? String).map { " (\($0))" } ?? ""
-        return HealthKitFHIRApplication(name: name, bundleIdentifier: identifier, version: version + build)
-    }
-
-    public let name: String
-    public let bundleIdentifier: String
-    public let version: String
-
-    /// The identifier namespace this application owns for graph nodes it mints.
-    ///
-    /// A bundle identifier is globally unique and stable across releases, so it is a valid
-    /// default namespace for a deployment that does not yet own a server URL. Override it with
-    /// ``HealthKitFHIRConversionContext/graphIdentifierSystem`` once one exists.
-    public var graphIdentifierSystem: String {
-        "urn:grove:healthkit-graph:\(bundleIdentifier)"
-    }
-
-    public init(name: String, bundleIdentifier: String, version: String) {
-        self.name = name
-        self.bundleIdentifier = bundleIdentifier
-        self.version = version
-    }
-}
-
-
-/// Explicit interpretation of `HKSourceRevision.source` for one conversion.
-///
-/// HealthKit exposes no reliable application/device discriminator. The converter never
-/// guesses from a name, identifier shape, or product type.
-public enum HealthKitFHIRSourceActor: Hashable, Sendable {
-    /// Omit the source author from Provenance.
-    case omit
-    /// The caller has established that the source is an application.
-    case application
-    /// The caller has established that the source is a device. The opaque HealthKit
-    /// source identifier is disclosed only when explicitly authorized.
-    case device(discloseIdentifier: Bool)
-}
-
-
-/// Controls disclosure of globally identifying recording-device information.
-///
-/// Selecting ``authorizedUDI`` is an explicit caller attestation that disclosing the
-/// HealthKit UDI is necessary for the deployment and has been authorized. This is
-/// independent of the deployment-local identifier namespace configured on
-/// ``HealthKitFHIRConversionContext``.
-public enum HealthKitFHIRUDIDisclosurePolicy: Hashable, Sendable {
-    /// Omit globally identifying device information. This is the privacy-preserving default.
-    case omit
-    /// Disclose the UDI supplied by HealthKit after the caller has established necessity
-    /// and authorization.
-    case authorizedUDI
-}
-
-
-/// Controls disclosure of the complete source revision attached to a correlated ECG symptom.
-///
-/// The bundle identifier, product type, software version, and operating-system version can
-/// be linkable. This policy is therefore independent of recording-device and UDI disclosure.
-public enum HealthKitFHIRSourceDisclosurePolicy: Hashable, Sendable {
-    /// Do not disclose correlated-symptom source revision fields. This is the default.
-    /// Because the ECG contract requires those fields, correlated symptoms fail closed.
-    case omit
-    /// The caller has established necessity and authorization to disclose every required
-    /// correlated-symptom `HKSourceRevision` field.
-    case authorized
-}
-
-
-/// Optional logical ids already assigned by a FHIR repository.
-///
-/// These are never derived from HealthKit identities or Bundle UUID URNs.
-public struct HealthKitFHIRRepositoryIDs: Hashable, Sendable {
-    public let bundle: GroveFHIRRepositoryID?
-    public let observation: GroveFHIRRepositoryID?
-    public let recordingDevice: GroveFHIRRepositoryID?
-    public let converterApplication: GroveFHIRRepositoryID?
-    public let sourceAuthor: GroveFHIRRepositoryID?
-    public let provenance: GroveFHIRRepositoryID?
-
-    public init(
-        bundle: GroveFHIRRepositoryID? = nil,
-        observation: GroveFHIRRepositoryID? = nil,
-        recordingDevice: GroveFHIRRepositoryID? = nil,
-        converterApplication: GroveFHIRRepositoryID? = nil,
-        sourceAuthor: GroveFHIRRepositoryID? = nil,
-        provenance: GroveFHIRRepositoryID? = nil
-    ) {
-        self.bundle = bundle
-        self.observation = observation
-        self.recordingDevice = recordingDevice
-        self.converterApplication = converterApplication
-        self.sourceAuthor = sourceAuthor
-        self.provenance = provenance
-    }
-}
-
-
-/// Explicit inputs needed to make a reproducible, auditable FHIR graph.
-public struct HealthKitFHIRConversionContext: Sendable {
-    public let subject: Reference
-    public let converter: HealthKitFHIRApplication
-    /// Deployment-owned identifier namespace for graph nodes that have no natural identity.
-    ///
-    /// A sample's Observation is identified by its HealthKit object UUID, but the Bundle, the
-    /// conversion Provenance, and derived Device resources exist only because of this export.
-    /// Their business identifiers are minted deterministically inside this namespace, so the
-    /// same conversion always produces the same graph and re-sends deduplicate on the server.
-    ///
-    /// Defaults to ``HealthKitFHIRApplication/graphIdentifierSystem``, which is derived from the
-    /// converting app's bundle identifier. Pass one stable URL you own once the deployment has a
-    /// server namespace, for example `https://mystudy.example.org/fhir/identifiers/mobile-graph`.
-    ///
-    /// - Note: See <doc:ConfiguringAConversion> for what an identifier namespace is in FHIR.
-    public let graphIdentifierSystem: String
-    public let sourceActor: HealthKitFHIRSourceActor
-    public let converterWasGateway: Bool
-    /// The instant of this conversion event.
-    ///
-    /// Written to `Observation.issued`, `Provenance.occurred`/`recorded`, and `Bundle.timestamp`;
-    /// each sample's own measurement time always comes from the sample and lands in
-    /// `Observation.effective`. Defaults to the wall clock; pass a fixed instant to make a
-    /// conversion reproducible.
-    public let conversionInstant: Date
-    /// Deployment-owned namespace that authorizes disclosure of an opaque, local
-    /// `HKDevice.localIdentifier`. It does not authorize UDI disclosure.
-    public let recordingDeviceIdentifierSystem: String?
-    /// Explicit UDI disclosure policy. The default omits the UDI even when HealthKit
-    /// supplies one.
-    public let udiDisclosurePolicy: HealthKitFHIRUDIDisclosurePolicy
-    /// Explicit policy for the linkable source-revision evidence required by correlated
-    /// ECG symptoms.
-    public let sourceRevisionDisclosurePolicy: HealthKitFHIRSourceDisclosurePolicy
-    public let researchStudies: [Reference]
-    public let repositoryIDs: HealthKitFHIRRepositoryIDs
-
-    /// Creates a conversion context, deriving everything that can be read from the running app.
-    ///
-    /// Only ``subject`` has no local answer: nothing on the device knows who the receiving
-    /// system thinks this data is about. See <doc:ConfiguringAConversion>.
-    ///
-    /// ```swift
-    /// let context = HealthKitFHIRConversionContext(subject: Reference(reference: "Patient/example"))
-    /// ```
-    public init(
-        subject: Reference,
-        converter: HealthKitFHIRApplication = .main,
-        graphIdentifierSystem: String? = nil,
-        sourceActor: HealthKitFHIRSourceActor = .omit,
-        converterWasGateway: Bool = false,
-        conversionInstant: Date = .now,
-        recordingDeviceIdentifierSystem: String? = nil,
-        udiDisclosurePolicy: HealthKitFHIRUDIDisclosurePolicy = .omit,
-        sourceRevisionDisclosurePolicy: HealthKitFHIRSourceDisclosurePolicy = .omit,
-        researchStudies: [Reference] = [],
-        repositoryIDs: HealthKitFHIRRepositoryIDs = .init()
-    ) {
-        self.subject = subject
-        self.converter = converter
-        self.graphIdentifierSystem = graphIdentifierSystem ?? converter.graphIdentifierSystem
-        self.sourceActor = sourceActor
-        self.converterWasGateway = converterWasGateway
-        self.conversionInstant = conversionInstant
-        self.recordingDeviceIdentifierSystem = recordingDeviceIdentifierSystem
-        self.udiDisclosurePolicy = udiDisclosurePolicy
-        self.sourceRevisionDisclosurePolicy = sourceRevisionDisclosurePolicy
-        self.researchStudies = researchStudies
-        self.repositoryIDs = repositoryIDs
-    }
-}
-
-
-/// Complete business identities of one emitted exchange graph.
-public struct HealthKitFHIRGraphIdentifiers: Hashable, Sendable {
-    public let bundle: GroveFHIRBusinessIdentifier
-    public let observation: GroveFHIRBusinessIdentifier
-    public let recordingDevice: GroveFHIRBusinessIdentifier?
-    public let converterApplication: GroveFHIRBusinessIdentifier
-    public let sourceAuthor: GroveFHIRBusinessIdentifier?
-    public let provenance: GroveFHIRBusinessIdentifier
-}
-
-
-/// One complete conversion graph.
-///
-/// Resources have no logical `Resource.id` unless the caller supplied a repository id.
-/// Deterministic UUIDv5 Bundle fullUrls connect graph entries.
-public struct HealthKitFHIRConversion: Sendable {
-    public let sourceIdentifier: Identifier
-    public let graphIdentifiers: HealthKitFHIRGraphIdentifiers
-    public let observation: Observation
-    public let recordingDevice: Device?
-    public let converterApplication: Device
-    public let sourceAuthor: Device?
-    public let provenance: Provenance
-    public let bundle: ModelsR4.Bundle
-}
-
-
-/// Failure for one record in a batch. The original source identity and typed reason are
-/// retained; batch conversion never drops a record silently.
-public struct HealthKitFHIRRecordFailure: Error, Equatable, Sendable {
-    public let sourceUUID: UUID
-    public let sourceTypeIdentifier: String
-    public let reason: GroveHealthKitFHIRError
-}
-
-
-/// Explicit successes and failures from a batch conversion.
-public struct HealthKitFHIRBatchResult: Sendable {
-    public let conversions: [HealthKitFHIRConversion]
-    public let failures: [HealthKitFHIRRecordFailure]
-}
-
-
 /// Profile-aware HealthKit-to-FHIR R4 facade.
 ///
 /// The converter consumes already-fetched `HKSample` values. It does not query HealthKit,
@@ -536,11 +307,14 @@ extension HealthKitFHIRConverter {
     }
 
     static func validate(context: HealthKitFHIRConversionContext) throws {
-        guard !context.converter.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw GroveHealthKitFHIRError.invalidConverterApplication("name")
-        }
+        // Checked first: an empty bundle identifier still yields a syntactically valid graph
+        // namespace (`urn:grove:healthkit-graph:`), so nothing downstream would catch it. A host
+        // can carry CFBundleName without CFBundleIdentifier, so the name check would not either.
         guard !context.converter.bundleIdentifier.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw GroveHealthKitFHIRError.invalidConverterApplication("bundleIdentifier")
+        }
+        guard !context.converter.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw GroveHealthKitFHIRError.invalidConverterApplication("name")
         }
         guard !context.converter.version.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw GroveHealthKitFHIRError.invalidConverterApplication("version")
@@ -571,29 +345,21 @@ extension HealthKitFHIRConverter {
         reference: Reference,
         field: String,
         expectedResourceType: String
-    ) throws -> GroveFHIRTypedReferenceIdentity {
+    ) throws(GroveHealthKitFHIRError) -> GroveFHIRTypedReferenceIdentity {
         do {
             return try GroveFHIRTypedReference.validate(
                 reference,
                 expectedResourceType: expectedResourceType
             )
-        } catch let error as GroveFHIRTypedReferenceError {
+        } catch {
             switch error {
             case .unboundBundleUUID:
-                throw GroveHealthKitFHIRError.invalidExchangeIdentity(
+                throw .invalidExchangeIdentity(
                     "\(field) contains a UUID URN that is not an entry in the emitted Bundle"
                 )
             case .invalidReference:
-                throw GroveHealthKitFHIRError.invalidReference(
-                    field: field,
-                    expectedResourceType: expectedResourceType
-                )
+                throw .invalidReference(field: field, expectedResourceType: expectedResourceType)
             }
-        } catch {
-            throw GroveHealthKitFHIRError.invalidReference(
-                field: field,
-                expectedResourceType: expectedResourceType
-            )
         }
     }
 

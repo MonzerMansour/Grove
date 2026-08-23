@@ -39,7 +39,7 @@ public enum GroveFHIRTypedReference {
     public static func validate(
         _ reference: Reference,
         expectedResourceType: String
-    ) throws -> GroveFHIRTypedReferenceIdentity {
+    ) throws(GroveFHIRTypedReferenceError) -> GroveFHIRTypedReferenceIdentity {
         let literal = reference.reference?.value?.string
         let identifier = reference.identifier
         guard literal == nil || identifier == nil else {

@@ -385,6 +385,30 @@ extension GroveSensorKitFHIRConverter {
         try GroveFHIRBusinessIdentifier(system: system, value: "\(role):\(source.value)")
     }
 
+
+    /// One typed mapping, so a new reference failure cannot be flattened into a description string.
+    private static func validatedReference(
+        _ reference: Reference,
+        field: String,
+        expectedResourceType: String
+    ) throws(GroveSensorKitFHIRConversionError) -> GroveFHIRTypedReferenceIdentity {
+        do {
+            return try GroveFHIRTypedReference.validate(
+                reference,
+                expectedResourceType: expectedResourceType
+            )
+        } catch {
+            switch error {
+            case .unboundBundleUUID:
+                throw .invalidIdentity(
+                    "\(field) contains a UUID URN that is not an entry in the emitted Bundle"
+                )
+            case .invalidReference:
+                throw .invalidReference("\(field) must reference a \(expectedResourceType)")
+            }
+        }
+    }
+
     private static func validate(
         record: GroveSensorKitFHIRRecord,
         context: GroveSensorKitFHIRConversionContext
