@@ -42,6 +42,11 @@ jobs:
         env:
           SWIFT_TAG: swift-6.1.2-RELEASE
         run: curl -fsSL "https://raw.githubusercontent.com/apple/swift/$SWIFT_TAG/utils/gyb.py" -o "$RUNNER_TEMP/gyb.py"
+      - name: Set up Swift
+        uses: SwiftyLab/setup-swift@v1
+      - name: Resolve packages
+        # FHIR+ExtensionUtils.swift.gyb reads the ModelsR4 sources out of the resolved checkout.
+        run: swift package resolve
       - name: Verify every gyb template matches its committed output
         run: GYB="$RUNNER_TEMP/gyb.py" Scripts/check-gyb-output.sh
 

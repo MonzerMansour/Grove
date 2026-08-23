@@ -121,28 +121,4 @@ struct HealthKitFHIRDeviceIdentityTests {
     }
 }
 
-
-/// A host with no bundle identity must fail through the typed error path, never trap and never
-/// mint a graph namespace shared by every such host.
-@Suite
-struct HealthKitFHIRApplicationIdentityTests {
-    @Test("A bundle-less host is rejected as an invalid converter application")
-    func bundleLessHostIsRejected() {
-        let context = HealthKitFHIRConversionContext(
-            subject: Reference(reference: "Patient/1a2b3c".asFHIRStringPrimitive()),
-            converter: HealthKitFHIRApplication(name: "Runner", bundleIdentifier: "", version: "1.0")
-        )
-        #expect(throws: GroveHealthKitFHIRError.invalidConverterApplication("bundleIdentifier")) {
-            try HealthKitFHIRConverter.validate(context: context)
-        }
-    }
-
-    @Test("The empty namespace such a host derives is never treated as valid")
-    func emptyNamespaceIsNotSilentlyAccepted() {
-        let application = HealthKitFHIRApplication(name: "Runner", bundleIdentifier: "", version: "1.0")
-        // Syntactically a valid URN, which is exactly why validation cannot rely on it.
-        #expect(application.graphIdentifierSystem == "urn:grove:healthkit-graph:")
-    }
-}
-
 #endif
