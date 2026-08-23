@@ -104,7 +104,7 @@ extension HealthKitFHIRConverter {
         "http://terminology.hl7.org/CodeSystem/provenance-participant-type"
     static let lifecycleEvent: FHIRPrimitive<FHIRURI> =
         "http://terminology.hl7.org/CodeSystem/iso-21089-lifecycle"
-    static let observationCategory: FHIRPrimitive<FHIRURI> =
+    private static let observationCategory: FHIRPrimitive<FHIRURI> =
         "http://terminology.hl7.org/CodeSystem/observation-category"
     /// Displays for the measurements whose generated contract carries no code display.
     private static let measurementDisplays = [
