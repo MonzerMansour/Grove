@@ -39,6 +39,7 @@
     "Patient"
   ],
   "url": "https://example.org/fhir/Questionnaire/image-capture-example",
+  "version": "1.0.0",
   "item": [
     {
       "linkId": "1aca86a1-cb08-49cd-a2ba-d210e7ed0a07",

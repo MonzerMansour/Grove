@@ -6,6 +6,7 @@
   "status": "draft",
   "publisher": "Stanford University",
   "url": "https://example.org/fhir/Questionnaire/text-validation-example",
+  "version": "1.0.0",
   "meta": {
     "tag": [
       {

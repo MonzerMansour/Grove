@@ -39,6 +39,7 @@
     "Patient"
   ],
   "url": "https://example.org/fhir/Questionnaire/4f34fe66-ee0d-4e8d-8a3b-0cf952f4a35d",
+  "version": "1.0.0",
   "item": [
     {
       "linkId": "2b441d69-0e29-4cd7-88b7-91ce722d47e1",

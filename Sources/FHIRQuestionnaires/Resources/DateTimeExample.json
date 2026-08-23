@@ -39,6 +39,7 @@
     "Patient"
   ],
   "url": "https://example.org/fhir/Questionnaire/date-time-example",
+  "version": "1.0.0",
   "item": [
     {
       "linkId": "cc7f8427-15fc-4c52-b6a3-3ba6635b8249",

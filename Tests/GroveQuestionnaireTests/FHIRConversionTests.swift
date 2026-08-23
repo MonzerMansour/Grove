@@ -26,8 +26,25 @@ struct FHIRConversionTests {
             _ = try GroveQuestionnaire.Questionnaire(input, evaluationInstant: questionnaireResponseTestAuthoredAt)
         }
     }
-    
-    
+
+
+    /// Every bundled example must survive the round trip, not just be readable.
+    ///
+    /// A response carries the canonical of the exact questionnaire version it answers, so an
+    /// example without a version imports cleanly and then strands the participant at submission.
+    @Test
+    func everyBundledExampleExports() throws {
+        let allR4Inputs = ModelsR4.Questionnaire.exampleQuestionnaires + ModelsR4.Questionnaire.researchQuestionnaires
+        for input in allR4Inputs {
+            let questionnaire = try GroveQuestionnaire.Questionnaire(input, evaluationInstant: questionnaireResponseTestAuthoredAt)
+            _ = try ModelsR4.QuestionnaireResponse(
+                QuestionnaireResponses(questionnaire: questionnaire),
+                authored: questionnaireResponseTestAuthoredAt
+            )
+        }
+    }
+
+
     @Test
     func convertToFHIR() throws {
         let questionnaire = GroveQuestionnaire.Questionnaire.phq9

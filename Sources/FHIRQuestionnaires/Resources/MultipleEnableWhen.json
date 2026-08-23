@@ -39,6 +39,7 @@
     "Patient"
   ],
   "url": "https://example.org/fhir/Questionnaire/multiple-enable-when-example",
+  "version": "1.0.0",
   "item": [
     {
       "linkId": "ae4bde24-8709-436d-8961-15d04d649d7c",

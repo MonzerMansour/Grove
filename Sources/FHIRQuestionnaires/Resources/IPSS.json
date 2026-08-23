@@ -39,6 +39,7 @@
         "Patient"
     ],
     "url": "https://example.org/fhir/Questionnaire/ipss",
+    "version": "1.0.0",
     "contained": [
         {
             "resourceType": "ValueSet",

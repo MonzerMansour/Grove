@@ -39,6 +39,7 @@
       "Patient"
    ],
    "url":"https://example.org/fhir/Questionnaire/GAD-7",
+   "version": "1.0.0",
    "contained":[
       {
          "resourceType":"ValueSet",
