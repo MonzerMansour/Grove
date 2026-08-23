@@ -18,7 +18,7 @@ public struct HealthKitFHIRApplication: Hashable, Sendable {
     ///
     /// A host without a bundle identifier — a command-line tool, a bare test runner — has no
     /// application identity to state. Rather than trap in a default argument, this yields an
-    /// identity that conversion rejects as ``GroveHealthKitFHIRError/invalidConverterApplication``,
+    /// identity that conversion rejects as ``GroveHealthKitFHIRError/invalidConverterApplication(_:)``,
     /// so such a host fails through the same typed path as any other invalid context.
     public static var main: HealthKitFHIRApplication {
         let bundle = Bundle.main
