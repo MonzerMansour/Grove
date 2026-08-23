@@ -12,7 +12,7 @@
 #if canImport(HealthKit)
 
 import FHIRModelsExtensions
-public import Foundation
+import Foundation
 public import GroveFHIRContract
 import GroveHealthKit
 public import HealthKit
@@ -306,7 +306,7 @@ extension HealthKitFHIRConverter {
         }
     }
 
-    static func validate(context: HealthKitFHIRConversionContext) throws {
+    static func validate(context: HealthKitFHIRConversionContext) throws(GroveHealthKitFHIRError) {
         // Checked first: an empty bundle identifier still yields a syntactically valid graph
         // namespace (`urn:grove:healthkit-graph:`), so nothing downstream would catch it. A host
         // can carry CFBundleName without CFBundleIdentifier, so the name check would not either.
@@ -319,9 +319,9 @@ extension HealthKitFHIRConverter {
         guard !context.converter.version.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw GroveHealthKitFHIRError.invalidConverterApplication("version")
         }
-        _ = try GroveFHIRBusinessIdentifier(system: context.graphIdentifierSystem, value: "validation")
+        try validateIdentifierSystem(context.graphIdentifierSystem)
         if let system = context.recordingDeviceIdentifierSystem {
-            _ = try GroveFHIRBusinessIdentifier(system: system, value: "validation")
+            try validateIdentifierSystem(system)
         }
         _ = try validateReference(
             reference: context.subject,
@@ -338,6 +338,14 @@ extension HealthKitFHIRConverter {
             guard studyIdentities.insert(identity).inserted else {
                 throw GroveHealthKitFHIRError.duplicateReference(field: "researchStudies")
             }
+        }
+    }
+
+    private static func validateIdentifierSystem(_ system: String) throws(GroveHealthKitFHIRError) {
+        do {
+            _ = try GroveFHIRBusinessIdentifier(system: system, value: "validation")
+        } catch {
+            throw .invalidExchangeIdentity(String(describing: error))
         }
     }
 

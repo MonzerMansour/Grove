@@ -7,7 +7,7 @@
 //
 
 import CryptoKit
-public import Foundation
+import Foundation
 
 
 /// The published recording-device identity algorithm from `catalog/exchange-identity.json`.

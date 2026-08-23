@@ -96,19 +96,6 @@ public struct GroveSensorKitFHIRConversion: Sendable {
 }
 
 
-public enum GroveSensorKitFHIRConversionError: Error, Equatable, Sendable {
-    case invalidRecord(GroveSensorKitFHIRRecordError)
-    case invalidConverterApplication(String)
-    case invalidReference(String)
-    case duplicateResearchStudyReference
-    case invalidIdentity(String)
-    case repositoryIDWithoutStructuredOutput
-    case repositoryIDWithoutRawOutput
-    case repositoryIDWithoutRecordingDevice
-    case payloadTooLarge(byteCount: Int)
-}
-
-
 public struct GroveSensorKitFHIRRecordFailure: Error, Equatable, Sendable {
     public let sourceRecordID: GroveSensorKitSourceRecordID
     public let reason: GroveSensorKitFHIRConversionError
@@ -136,7 +123,7 @@ public struct GroveSensorKitFHIRConverter: Sendable {
         } catch let error as GroveSensorKitFHIRRecordError {
             throw GroveSensorKitFHIRConversionError.invalidRecord(error)
         } catch {
-            throw GroveSensorKitFHIRConversionError.invalidIdentity(String(describing: error))
+            throw GroveSensorKitFHIRConversionError(conversionFailure: error)
         }
     }
 
@@ -154,7 +141,7 @@ public struct GroveSensorKitFHIRConverter: Sendable {
             } catch {
                 failures.append(.init(
                     sourceRecordID: record.sourceRecordID,
-                    reason: .invalidIdentity(String(describing: error))
+                    reason: GroveSensorKitFHIRConversionError(conversionFailure: error)
                 ))
             }
         }
@@ -420,19 +407,17 @@ extension GroveSensorKitFHIRConverter {
             throw GroveSensorKitFHIRConversionError.invalidConverterApplication("version")
         }
         _ = try GroveFHIRBusinessIdentifier(system: context.graphIdentifierSystem, value: "validation")
-        do {
-            _ = try GroveFHIRTypedReference.validate(context.subject, expectedResourceType: "Patient")
-            var identities: Set<GroveFHIRTypedReferenceIdentity> = []
-            for study in context.researchStudies {
-                let identity = try GroveFHIRTypedReference.validate(study, expectedResourceType: "ResearchStudy")
-                guard identities.insert(identity).inserted else {
-                    throw GroveSensorKitFHIRConversionError.duplicateResearchStudyReference
-                }
+        _ = try validatedReference(context.subject, field: "subject", expectedResourceType: "Patient")
+        var identities: Set<GroveFHIRTypedReferenceIdentity> = []
+        for study in context.researchStudies {
+            let identity = try validatedReference(
+                study,
+                field: "researchStudies",
+                expectedResourceType: "ResearchStudy"
+            )
+            guard identities.insert(identity).inserted else {
+                throw GroveSensorKitFHIRConversionError.duplicateResearchStudyReference
             }
-        } catch let error as GroveSensorKitFHIRConversionError {
-            throw error
-        } catch {
-            throw GroveSensorKitFHIRConversionError.invalidReference(String(describing: error))
         }
         if context.repositoryIDs.recordingDevice != nil, context.recordingDevice == nil {
             throw GroveSensorKitFHIRConversionError.repositoryIDWithoutRecordingDevice
