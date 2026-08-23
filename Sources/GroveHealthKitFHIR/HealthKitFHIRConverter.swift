@@ -160,16 +160,6 @@ public struct HealthKitFHIRConversionContext: Sendable {
     /// Deployment-owned namespace that authorizes disclosure of an opaque, local
     /// `HKDevice.localIdentifier`. It does not authorize UDI disclosure.
     public let recordingDeviceIdentifierSystem: String?
-    /// Opaque deployment-owned scope that lets one physical recorder deduplicate across samples.
-    ///
-    /// Without it every sample carries its own recording `Device`, so one watch is stored once
-    /// per reading. Supplying a stable scope switches the recorder to the published
-    /// `GroveFHIRRecordingDeviceIdentity` digest, which yields one Device per recorder
-    /// configuration instead. The scope is hashed into the identifier and never serialized.
-    ///
-    /// Fix it once per deployment and keep it: changing it re-mints every recording Device, so
-    /// graphs exported before the change no longer deduplicate against later ones.
-    public let deviceIdentityScope: String?
     /// Explicit UDI disclosure policy. The default omits the UDI even when HealthKit
     /// supplies one.
     public let udiDisclosurePolicy: HealthKitFHIRUDIDisclosurePolicy
@@ -195,7 +185,6 @@ public struct HealthKitFHIRConversionContext: Sendable {
         converterWasGateway: Bool = false,
         conversionInstant: Date = .now,
         recordingDeviceIdentifierSystem: String? = nil,
-        deviceIdentityScope: String? = nil,
         udiDisclosurePolicy: HealthKitFHIRUDIDisclosurePolicy = .omit,
         sourceRevisionDisclosurePolicy: HealthKitFHIRSourceDisclosurePolicy = .omit,
         researchStudies: [Reference] = [],
@@ -208,7 +197,6 @@ public struct HealthKitFHIRConversionContext: Sendable {
         self.converterWasGateway = converterWasGateway
         self.conversionInstant = conversionInstant
         self.recordingDeviceIdentifierSystem = recordingDeviceIdentifierSystem
-        self.deviceIdentityScope = deviceIdentityScope
         self.udiDisclosurePolicy = udiDisclosurePolicy
         self.sourceRevisionDisclosurePolicy = sourceRevisionDisclosurePolicy
         self.researchStudies = researchStudies
@@ -1219,25 +1207,25 @@ extension HealthKitFHIRConverter {
         return IdentifiedDevice(resource: device, identity: identity)
     }
 
-    /// The published recording-device digest, or `nil` when the deployment has not opted in or
-    /// the platform states too little to identify a recorder.
+    /// The published recording-device digest, or `nil` when the platform states too little to
+    /// identify a recorder.
+    ///
+    /// The subject is taken from its literal reference. An identifier-only subject has no pinned
+    /// lexical form, so it yields no shared device identity rather than an unstable one.
     private static func deduplicatingIdentity(
         for healthKitDevice: HKDevice,
         context: HealthKitFHIRConversionContext
     ) -> String? {
-        guard let scope = context.deviceIdentityScope else {
+        guard let subject = context.subject.reference?.value?.string else {
             return nil
         }
         return GroveFHIRRecordingDeviceIdentity.value(
-            scope: scope,
+            subject: subject,
             adapter: "healthkit",
             recorder: GroveFHIRRecordingDeviceIdentity.Recorder(
                 manufacturer: healthKitDevice.manufacturer?.nonEmpty,
                 model: healthKitDevice.model?.nonEmpty,
-                hardwareVersion: healthKitDevice.hardwareVersion?.nonEmpty,
-                firmwareVersion: healthKitDevice.firmwareVersion?.nonEmpty,
-                softwareVersion: healthKitDevice.softwareVersion?.nonEmpty,
-                localIdentifier: healthKitDevice.localIdentifier?.nonEmpty
+                hardwareVersion: healthKitDevice.hardwareVersion?.nonEmpty
             )
         )
     }
