@@ -1,0 +1,53 @@
+//
+// This source file is part of the Grove open-source project
+//
+// SPDX-FileCopyrightText: 2026 Stanford University and the project authors (see CONTRIBUTORS.md)
+//
+// SPDX-License-Identifier: MIT
+//
+
+public import Foundation
+
+
+extension String {
+    /// The shortest decimal text that round-trips this value, never in exponent notation.
+    ///
+    /// Every Grove producer serializes a measured `Double` through here, so the same value is
+    /// exchanged as the same characters whichever adapter emitted it. Going through `Decimal` or
+    /// `NSDecimalNumber` instead widens the value to its binary expansion — one third becomes
+    /// `0.333333333333333248` rather than `0.3333333333333333` — which is neither the shortest
+    /// round-trip form nor stable across adapters.
+    ///
+    /// FHIR forbids exponent notation in a `decimal`, so an exponent-formatted `Double` is
+    /// expanded to positional digits rather than reformatted.
+    public init(groveFHIRPlainDecimal value: Double) {
+        guard value != 0 else {
+            self = "0"
+            return
+        }
+        let shortest = String(value)
+        guard let exponentMarker = shortest.firstIndex(where: { $0 == "e" || $0 == "E" }) else {
+            self = shortest.hasSuffix(".0") ? String(shortest.dropLast(2)) : shortest
+            return
+        }
+        let mantissa = shortest[..<exponentMarker]
+        let exponent = Int(shortest[shortest.index(after: exponentMarker)...]) ?? 0
+        let isNegative = mantissa.first == "-"
+        let unsigned = isNegative ? mantissa.dropFirst() : mantissa[...]
+        let point = unsigned.firstIndex(of: ".")
+        let scale = point.map { unsigned.distance(from: unsigned.startIndex, to: $0) } ?? unsigned.count
+        let digits = unsigned.filter { $0 != "." }
+        let expandedScale = scale + exponent
+
+        let magnitude: String
+        if expandedScale <= 0 {
+            magnitude = "0." + String(repeating: "0", count: -expandedScale) + digits
+        } else if expandedScale >= digits.count {
+            magnitude = digits + String(repeating: "0", count: expandedScale - digits.count)
+        } else {
+            let insertion = digits.index(digits.startIndex, offsetBy: expandedScale)
+            magnitude = digits[..<insertion] + "." + digits[insertion...]
+        }
+        self = isNegative ? "-" + magnitude : magnitude
+    }
+}

@@ -121,32 +121,7 @@ enum HealthKitECGEvidenceValidator {
     /// The result remains the exact same decimal number while satisfying the Sensor IG's
     /// plain-decimal SampledData grammar.
     private static func sampledDataDecimal(_ value: Double) -> String {
-        guard value != 0 else {
-            return "0"
-        }
-        let shortest = String(value)
-        guard let exponentMarker = shortest.firstIndex(where: { $0 == "e" || $0 == "E" }) else {
-            return shortest.hasSuffix(".0") ? String(shortest.dropLast(2)) : shortest
-        }
-        let mantissa = shortest[..<exponentMarker]
-        let exponent = Int(shortest[shortest.index(after: exponentMarker)...]) ?? 0
-        let isNegative = mantissa.first == "-"
-        let unsignedMantissa = isNegative ? mantissa.dropFirst() : mantissa[...]
-        let decimalPoint = unsignedMantissa.firstIndex(of: ".")
-        let originalScale = decimalPoint.map { unsignedMantissa.distance(from: unsignedMantissa.startIndex, to: $0) }
-            ?? unsignedMantissa.count
-        let digits = unsignedMantissa.filter { $0 != "." }
-        let expandedScale = originalScale + exponent
-        let magnitude: String
-        if expandedScale <= 0 {
-            magnitude = "0." + String(repeating: "0", count: -expandedScale) + digits
-        } else if expandedScale >= digits.count {
-            magnitude = digits + String(repeating: "0", count: expandedScale - digits.count)
-        } else {
-            let insertion = digits.index(digits.startIndex, offsetBy: expandedScale)
-            magnitude = digits[..<insertion] + "." + digits[insertion...]
-        }
-        return isNegative ? "-" + magnitude : magnitude
+        String(groveFHIRPlainDecimal: value)
     }
 }
 

@@ -500,14 +500,14 @@ extension SensorFHIRConverter {
                 code: unitCode.asFHIRStringPrimitive(),
                 system: ucum,
                 unit: unitDisplay?.asFHIRStringPrimitive(),
-                value: FHIRPrimitive(FHIRDecimal(Decimal(origin)))
+                value: FHIRPrimitive(FHIRDecimal(Decimal(string: String(groveFHIRPlainDecimal: origin)) ?? 0))
             ),
-            period: FHIRPrimitive(FHIRDecimal(Decimal(periodMilliseconds)))
+            period: FHIRPrimitive(FHIRDecimal(Decimal(string: String(groveFHIRPlainDecimal: periodMilliseconds)) ?? 0))
         )
     }
 
     private static func fhirNumber(_ value: Double) -> String {
-        NSDecimalNumber(value: value).stringValue
+        String(groveFHIRPlainDecimal: value)
     }
 
     private static func period(start: Date, end: Date) throws -> Period {

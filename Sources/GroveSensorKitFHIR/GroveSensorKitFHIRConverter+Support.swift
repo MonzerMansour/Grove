@@ -235,31 +235,7 @@ extension GroveSensorKitFHIRConverter {
 
     static func plainDecimal(_ value: Double, field: String, index: Int?) throws -> String {
         _ = try decimal(value, field: field, index: index)
-        guard value != 0 else {
-            return "0"
-        }
-        let shortest = String(value)
-        guard let marker = shortest.firstIndex(where: { $0 == "e" || $0 == "E" }) else {
-            return shortest.hasSuffix(".0") ? String(shortest.dropLast(2)) : shortest
-        }
-        let mantissa = shortest[..<marker]
-        let exponent = Int(shortest[shortest.index(after: marker)...]) ?? 0
-        let negative = mantissa.first == "-"
-        let unsigned = negative ? mantissa.dropFirst() : mantissa[...]
-        let point = unsigned.firstIndex(of: ".")
-        let scale = point.map { unsigned.distance(from: unsigned.startIndex, to: $0) } ?? unsigned.count
-        let digits = unsigned.filter { $0 != "." }
-        let targetScale = scale + exponent
-        let magnitude: String
-        if targetScale <= 0 {
-            magnitude = "0." + String(repeating: "0", count: -targetScale) + digits
-        } else if targetScale >= digits.count {
-            magnitude = digits + String(repeating: "0", count: targetScale - digits.count)
-        } else {
-            let insertion = digits.index(digits.startIndex, offsetBy: targetScale)
-            magnitude = digits[..<insertion] + "." + digits[insertion...]
-        }
-        return negative ? "-" + magnitude : magnitude
+        return String(groveFHIRPlainDecimal: value)
     }
 
     static func period(start: Date, end: Date, timeZone: TimeZone) throws -> Period {
