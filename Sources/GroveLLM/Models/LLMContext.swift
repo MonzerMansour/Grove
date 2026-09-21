@@ -54,6 +54,8 @@ extension LLMContext: Codable {
     /// Decodes from the plain entity array the previous `LLMContext` typealias encoded to.
     public init(from decoder: any Decoder) throws {
         self.init(try [LLMContextEntity](from: decoder))
+        // Restoring a conversation cannot restore the network request that would finish these images.
+        storage.removeAll { $0._imageContent?.isGenerating == true }
     }
 
     /// Encodes as a plain entity array, matching the previous `LLMContext` typealias.
@@ -252,6 +254,14 @@ extension LLMContext {
         if let last, last.role == .assistant, !last.complete {
             markCompleted(at: endIndex - 1)
         }
+    }
+
+    /// Finalizes a particular assistant message when multiple responses arrive interleaved.
+    package mutating func markAssistantOutputCompleted(id: UUID) {
+        guard let index = firstIndex(where: { $0.id == id && $0.role == .assistant && !$0.complete }) else {
+            return
+        }
+        markCompleted(at: index)
     }
 
     /// Finalizes the entity at `index`, stamping when its streaming ended.
