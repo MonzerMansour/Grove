@@ -911,6 +911,69 @@ struct AccountKeyMacroTests {
             failureHandler: { Issue.record("\($0.message)") }
         )
     }
+    
+    @Test
+    func accountKeyModuleSelector2() {
+        assertMacroExpansion(
+            """
+            extension AccountDetails {
+                @AccountKey(
+                    id: "engine",
+                    name: "Engine",
+                    options: .mutable,
+                    as: Spacecraft.IonThruster::Engine.self,
+                    initial: .empty(.automatic)
+                )
+                var engine: Spacecraft.IonThruster::Engine?
+            }
+            """,
+            expandedSource:
+            """
+            extension AccountDetails {
+                var engine: Spacecraft.IonThruster::Engine? {
+                    get {
+                        self[__Key_engine.self]
+                    }
+                    set {
+                        self[__Key_engine.self] = newValue
+                    }
+                }
+
+                struct __Key_engine: AccountKey {
+                    typealias Value = Spacecraft.IonThruster::Engine
+
+                    static let name: LocalizedStringResource = "Engine"
+                    static let identifier: String = "engine"
+                    static let category: AccountKeyCategory = .other
+                    static var initialValue: InitialValue<Value> {
+                        .empty(.automatic)
+                    }
+                    static let options: AccountKeyOptions = .mutable
+                    struct DataDisplay: DataDisplayView {
+                        var body: some View {
+                            fatalError("'\\("Engine")' does not support display access.")
+                        }
+
+                        init(_ value: Value) {
+                            fatalError("'\\("Engine")' does not support display access.")
+                        }
+                    }
+                    struct DataEntry: DataEntryView {
+                        var body: some View {
+                            fatalError("'\\("Engine")' does not support display access.")
+                        }
+
+                        init(_ value: Binding<Value>) {
+                            fatalError("'\\("Engine")' does not support display access.")
+                        }
+                    }
+                }
+            }
+            """,
+            macroSpecs: testMacrosSpecs,
+            failureHandler: { Issue.record("\($0.message)") }
+        )
+    }
 
     @Test
     func accountKeyModuleSelectorRequired() {
