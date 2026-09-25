@@ -920,7 +920,6 @@ struct AccountKeyMacroTests {
                 @AccountKey(
                     id: "engine",
                     name: "Engine",
-                    options: .mutable,
                     as: Spacecraft.IonThruster::Engine.self,
                     initial: .empty(.automatic)
                 )
@@ -948,25 +947,7 @@ struct AccountKeyMacroTests {
                     static var initialValue: InitialValue<Value> {
                         .empty(.automatic)
                     }
-                    static let options: AccountKeyOptions = .mutable
-                    struct DataDisplay: DataDisplayView {
-                        var body: some View {
-                            fatalError("'\\("Engine")' does not support display access.")
-                        }
-
-                        init(_ value: Value) {
-                            fatalError("'\\("Engine")' does not support display access.")
-                        }
-                    }
-                    struct DataEntry: DataEntryView {
-                        var body: some View {
-                            fatalError("'\\("Engine")' does not support display access.")
-                        }
-
-                        init(_ value: Binding<Value>) {
-                            fatalError("'\\("Engine")' does not support display access.")
-                        }
-                    }
+                    static let options: AccountKeyOptions = .default
                 }
             }
             """,
