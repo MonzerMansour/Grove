@@ -378,31 +378,29 @@ class IgnoredSharedChangeTests(unittest.TestCase):
 
 
 class RunnerRoutingTests(unittest.TestCase):
-    def test_self_hosted_jobs_use_base_and_package_labels(self):
+    def test_self_hosted_unit_and_ui_jobs_use_base_and_package_labels(self):
         result = run_selector("__ALL__")
-        jobs = [
-            (matrix, job)
-            for matrix in ("matrix", "ui_matrix")
-            for job in json.loads(result[matrix])["include"]
-            if job["selfHosted"]
-        ]
-        self.assertTrue(jobs, "The routing assertion must cover emitted self-hosted jobs")
-        for matrix, job in jobs:
-            with self.subTest(matrix=matrix, package=job["package"], platform=job["platform"]):
-                labels = json.loads(job["selfHostedLabels"])
-                self.assertEqual(
-                    labels,
-                    ["self-hosted", "macOS"] + list(MODULE.PKGS[job["package"]].get("extra_runner_labels", [])),
-                )
+        for matrix in ("matrix", "ui_matrix"):
+            with self.subTest(matrix=matrix):
+                jobs = [job for job in json.loads(result[matrix])["include"] if job["selfHosted"]]
+                self.assertTrue(jobs, "The routing assertion must cover emitted self-hosted jobs")
+                for job in jobs:
+                    with self.subTest(package=job["package"], platform=job["platform"]):
+                        labels = json.loads(job["selfHostedLabels"])
+                        self.assertEqual(
+                            labels,
+                            ["self-hosted", "macOS"] + list(MODULE.PKGS[job["package"]].get("extra_runner_labels", [])),
+                        )
 
-    def test_runtime_assertions_unit_tests_use_github_hosted_runners(self):
+    def test_runtime_assertions_uses_standard_self_hosted_runners(self):
         result = run_selector("Sources/RuntimeAssertions/Assertions.swift")
         jobs = json.loads(result["matrix"])["include"]
 
         self.assertTrue(jobs)
         for job in jobs:
             self.assertEqual(job["package"], "RuntimeAssertions")
-            self.assertFalse(job["selfHosted"])
+            self.assertTrue(job["selfHosted"])
+            self.assertEqual(json.loads(job["selfHostedLabels"]), ["self-hosted", "macOS"])
 
     def test_linux_and_ordinary_unit_jobs_remain_github_hosted(self):
         result = run_selector("__ALL__")

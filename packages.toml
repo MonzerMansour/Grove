@@ -21,8 +21,10 @@
 #   self-hosted-ci = which test kinds run on the self-hosted runner (vs GitHub-hosted): a subset of
 #               ["unit", "ui"]. Optional; defaults to ["ui"] — UI tests on the self-hosted runner,
 #               unit tests on GitHub-hosted (today's behavior). Add "unit" (e.g. ["unit", "ui"]) to
-#               also route a package's unit tests to the self-hosted runner. Linux unit jobs always
-#               stay on GitHub-hosted ubuntu regardless (the self-hosted runner is macOS).
+#               also route a package's unit tests to the self-hosted runner — useful for tests that
+#               need more CPU cores (e.g. RuntimeAssertions, whose cooperative-pool-blocking tests
+#               starve on the few-vCPU GitHub runner). Linux unit jobs always stay on GitHub-hosted
+#               ubuntu regardless (the self-hosted runner is macOS).
 # Note: GroveFoundation's "CZlib" is a directory name (Sources/CZlib); its Swift target is "GroveCZlib".
 
 [FHIRModelsExtensions]
@@ -217,6 +219,7 @@ uiTests = ["iOS"]
 platforms = ["iOS", "macOS", "macCatalyst", "watchOS", "visionOS", "tvOS"]
 targets = ["RuntimeAssertions", "RuntimeAssertionsTesting"]
 tests = ["RuntimeAssertionsTests"]
+self-hosted-ci = ["ui", "unit"]
 
 [XCTestExtensions]
 platforms = ["iOS", "macOS", "watchOS", "visionOS"]
