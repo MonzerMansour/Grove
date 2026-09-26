@@ -162,7 +162,7 @@ var dependencies: [Package.Dependency] = [
     .package(url: "https://github.com/apple/swift-openapi-runtime.git", from: "1.8.0"),
     .package(url: "https://github.com/apple/swift-openapi-urlsession.git", from: "1.1.0"),
     .package(url: "https://github.com/FelixHerrmann/swift-package-list.git", from: "4.8.0"),
-    .package(url: "https://github.com/PSchmiedmayer/textual.git", .upToNextMinor(from: "0.6.0")),
+    .package(url: "https://github.com/PSchmiedmayer/textual.git", .upToNextMinor(from: "0.6.4")),
     .package(url: "https://github.com/ml-explore/mlx-swift.git", .upToNextMinor(from: "0.29.1")),
     .package(url: "https://github.com/ml-explore/mlx-swift-examples.git", from: "2.29.1"),
     .package(url: "https://github.com/huggingface/swift-transformers.git", from: "1.0.0"),
@@ -680,7 +680,8 @@ var targets: [Target] = [
     .testTarget(
         name: "GroveChatTests",
         dependencies: [
-            .target(name: "GroveChat")
+            .target(name: "GroveChat"),
+            .product(name: "SnapshotTesting", package: "swift-snapshot-testing", condition: .when(platforms: [.iOS]))
         ],
         exclude: testTargetExcludes("GroveChatTests", additional: ["UITests"]),
         swiftSettings: defaultSwiftSettings,
@@ -693,7 +694,6 @@ var targets: [Target] = [
             .target(name: "Grove"),
             .target(name: "GroveFoundation"),
             .target(name: "GroveViews"),
-            .target(name: "GroveOnboarding"),
             .target(name: "GrovePersonalInfo"),
             .product(name: "TPPDF", package: "TPPDF"),
             .product(name: "MarkdownUI", package: "swift-markdown-ui")
@@ -1082,7 +1082,6 @@ var targets: [Target] = [
     .target(
         name: "GroveLLMLocalDownload",
         dependencies: [
-            .target(name: "GroveOnboarding"),
             .target(name: "GroveViews"),
             .target(name: "GroveLLMLocal"),
             .product(name: "MLXLLM", package: "mlx-swift-examples", condition: .when(traits: [mlxTrait]))
@@ -1106,7 +1105,7 @@ var targets: [Target] = [
             .target(name: "Grove"),
             .target(name: "GroveChat", condition: applePlatformsOnly),
             .target(name: "GroveKeychainStorage", condition: applePlatformsOnly),
-            .target(name: "GroveOnboarding", condition: applePlatformsOnly)
+            .target(name: "GroveViews", condition: applePlatformsOnly)
         ],
         exclude: targetExcludes("GroveLLMOpenAI"),
         resources: [
@@ -1174,7 +1173,7 @@ var targets: [Target] = [
             .target(name: "GroveLLM"),
             .target(name: "GroveFoundation"),
             .target(name: "GroveKeychainStorage", condition: applePlatformsOnly),
-            .target(name: "GroveOnboarding", condition: applePlatformsOnly),
+            .target(name: "GroveViews", condition: applePlatformsOnly),
             .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime")
         ],
         exclude: targetExcludes("GeneratedOpenAIClient", additional: [
@@ -1196,7 +1195,8 @@ var targets: [Target] = [
             .target(name: "GroveChat"),
             .target(name: "GroveLLM"),
             .target(name: "GroveLLMFoundationModels"),
-            .target(name: "GroveLLMOpenAI")
+            .target(name: "GroveLLMOpenAI"),
+            .target(name: "GroveLLMOpenAIRealtime")
         ],
         exclude: testTargetExcludes("GroveLLMTests", additional: ["UITests"]),
         swiftSettings: defaultSwiftSettings,
@@ -1206,6 +1206,7 @@ var targets: [Target] = [
     .target(
         name: "GroveLicense",
         dependencies: [
+            .target(name: "GroveViews"),
             .product(name: "SwiftPackageList", package: "swift-package-list")
         ],
         exclude: targetExcludes("GroveLicense"),
@@ -1541,6 +1542,9 @@ var targets: [Target] = [
             .target(name: "Grove")
         ],
         exclude: targetExcludes("GroveSpeechRecognizer"),
+        resources: [
+            .process("Resources")
+        ],
         swiftSettings: defaultSwiftSettings,
         plugins: [] + defaultPlugins
     ),
