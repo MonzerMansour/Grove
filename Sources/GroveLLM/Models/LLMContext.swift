@@ -54,6 +54,8 @@ extension LLMContext: Codable {
     /// Decodes from the plain entity array the previous `LLMContext` typealias encoded to.
     public init(from decoder: any Decoder) throws {
         self.init(try [LLMContextEntity](from: decoder))
+        // Restoring a conversation cannot restore the network request that would finish these images.
+        storage.removeAll { $0._imageContent?.isGenerating == true }
     }
 
     /// Encodes as a plain entity array, matching the previous `LLMContext` typealias.
@@ -214,6 +216,17 @@ extension LLMContext {
         storage.append(.init(_role: .assistant, _imageContent: image, interactionId: interactionId))
     }
 
+    /// Fills in the picture the assistant announced with ``append(assistantImage:interactionId:)`` and
+    /// ``LLMContextEntity/_ImageContent/generating``; appends it when nothing announced it.
+    package mutating func complete(assistantImage image: LLMContextEntity._ImageContent, interactionId: LLMInteractionId? = nil) {
+        guard let index = storage.lastIndex(where: { $0.interactionId == interactionId && $0._imageContent?.isGenerating == true }) else {
+            append(assistantImage: image, interactionId: interactionId)
+            return
+        }
+        let placeholder = storage[index]
+        storage[index] = .init(_role: .assistant, _imageContent: image, id: placeholder.id, date: placeholder.date, interactionId: interactionId)
+    }
+
     /// Records where an assistant answer drew from.
     ///
     /// Citations arrive after the text they belong to, so they are merged onto the answer already in the context
@@ -241,6 +254,14 @@ extension LLMContext {
         if let last, last.role == .assistant, !last.complete {
             markCompleted(at: endIndex - 1)
         }
+    }
+
+    /// Finalizes a particular assistant message when multiple responses arrive interleaved.
+    package mutating func markAssistantOutputCompleted(id: UUID) {
+        guard let index = firstIndex(where: { $0.id == id && $0.role == .assistant && !$0.complete }) else {
+            return
+        }
+        markCompleted(at: index)
     }
 
     /// Finalizes the entity at `index`, stamping when its streaming ended.
@@ -326,5 +347,10 @@ extension LLMContext {
         if let last, last.role == .assistantThinking, !last.complete, last.interactionId == interactionId {
             storage.removeLast()
         }
+    }
+
+    /// Drops the pictures an interaction announced but never delivered.
+    package mutating func removeGeneratingImages(for interactionId: LLMInteractionId) {
+        storage.removeAll { $0.interactionId == interactionId && $0._imageContent?.isGenerating == true }
     }
 }

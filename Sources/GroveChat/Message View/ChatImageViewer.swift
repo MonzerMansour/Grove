@@ -28,16 +28,16 @@ struct ChatImageViewer: View {
         guard images.indices.contains(selection) else {
             return nil
         }
-        #if os(iOS) || os(visionOS)
         if let image = platformImage(for: images[selection], at: selection) {
-            return ShareSheetInput(image)
+            return shareSheetInput(for: image)
         }
-        #endif
         switch images[selection] {
         case .image(let image):
-            return ShareSheetInput(image)
+            return shareSheetInput(for: image)
         case .url(let url):
             return ShareSheetInput(url)
+        case .generating:
+            return nil
         }
     }
 
@@ -100,8 +100,10 @@ struct ChatImageViewer: View {
     }
 
     init(images: [ChatEntity.Content.Image], startingAt index: Int = 0) {
-        self.images = images
-        self._selection = State(initialValue: images.indices.contains(index) ? index : 0)
+        let finished = images.filter { $0 != .generating }
+        let start = images.indices.contains(index) ? images[..<index].filter { $0 != .generating }.count : 0
+        self.images = finished
+        self._selection = State(initialValue: finished.indices.contains(start) ? start : 0)
     }
 
     @ViewBuilder
@@ -109,8 +111,9 @@ struct ChatImageViewer: View {
         #if os(iOS) || os(visionOS)
         let index = images.firstIndex(of: image) ?? 0
         if let loaded = platformImage(for: image, at: index) {
+            // Under the bar as well: the toolbar is glass over the picture, not a band above it.
             ZoomableImageView(image: loaded)
-                .ignoresSafeArea(edges: .bottom)
+                .ignoresSafeArea()
         } else {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -122,10 +125,19 @@ struct ChatImageViewer: View {
         }
         #else
         ScrollView([.horizontal, .vertical]) {
-            PlainMessageView.AttachedImagesView.imageContent(for: image, fillingTile: false)
+            PlainMessageView.AttachedImagesView.RevealingImage(image: image, fillingTile: false)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .scrollBounceBehavior(.basedOnSize)
+        #endif
+    }
+
+    /// With its title on iOS, where the sheet's header previews the picture; as it is elsewhere.
+    private func shareSheetInput(for image: PlatformImage) -> ShareSheetInput {
+        #if os(iOS) || os(visionOS)
+        ShareSheetInput(image: image, title: String(localized: "IMAGE", bundle: .module))
+        #else
+        ShareSheetInput(verbatim: image, id: ObjectIdentifier.init)
         #endif
     }
 
@@ -135,6 +147,8 @@ struct ChatImageViewer: View {
             platformImage
         case .url:
             loadedImages[index]
+        case .generating:
+            nil
         }
     }
 }

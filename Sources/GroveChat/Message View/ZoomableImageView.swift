@@ -23,28 +23,54 @@ struct ZoomableImageView: UIViewRepresentable {
             super.layoutSubviews()
             onLayout?()
         }
+
+        override func safeAreaInsetsDidChange() {
+            super.safeAreaInsetsDidChange()
+            onLayout?()
+        }
     }
 
     final class Coordinator: NSObject, UIScrollViewDelegate {
         var imageView: UIImageView?
         var fitted = false
-        private var fittedBounds = CGSize.zero
+        private var fittedSize = CGSize.zero
+        private var fittedInsets = UIEdgeInsets.zero
+        private var isFitting = false
+
+        /// The part of the view not under the bars: the picture opens fitted into this, and is centred in it, while
+        /// the view itself reaches under the bars so that they sit over the picture once it is zoomed.
+        private func safeBounds(of scrollView: UIScrollView) -> CGRect {
+            scrollView.bounds.inset(by: scrollView.safeAreaInsets)
+        }
 
         /// Sizes the image to the scroll view and starts from the fitted scale; re-fits when the bounds change.
+        ///
+        /// The frame is only ever set at a zoom scale of 1: a zoomed scroll view scales its content view through its
+        /// transform, and a frame assigned underneath that transform inflates the bounds by the inverse scale, which
+        /// shows the picture at pixel size with no way to zoom back out. Assigning the zoom scale lays out again, so
+        /// the method also guards against re-entering itself.
         func fit(_ scrollView: UIScrollView) {
-            guard let imageView, let image = imageView.image, scrollView.bounds.size != .zero,
-                  !fitted || scrollView.bounds.size != fittedBounds else {
+            let bounds = safeBounds(of: scrollView)
+            guard !isFitting, let imageView, let image = imageView.image, bounds.size != .zero, !bounds.isEmpty,
+                  !fitted || bounds.size != fittedSize || scrollView.safeAreaInsets != fittedInsets else {
                 return
             }
+            isFitting = true
+            defer { isFitting = false }
+            scrollView.minimumZoomScale = 1
+            scrollView.maximumZoomScale = 1
+            scrollView.zoomScale = 1
             imageView.frame = CGRect(origin: .zero, size: image.size)
             scrollView.contentSize = image.size
-            let fittingScale = min(scrollView.bounds.width / image.size.width, scrollView.bounds.height / image.size.height)
+            let fittingScale = min(bounds.width / image.size.width, bounds.height / image.size.height)
             scrollView.minimumZoomScale = fittingScale
             scrollView.maximumZoomScale = fittingScale * ZoomableImageView.maximumZoomMultiplier
             scrollView.zoomScale = fittingScale
             center(scrollView)
             fitted = true
-            fittedBounds = scrollView.bounds.size
+            // Scrolling and centering change bounds.origin without changing the available viewport.
+            fittedSize = bounds.size
+            fittedInsets = scrollView.safeAreaInsets
         }
 
         func viewForZooming(in scrollView: UIScrollView) -> UIView? {
@@ -71,11 +97,18 @@ struct ZoomableImageView: UIViewRepresentable {
             }
         }
 
-        /// Keeps a picture smaller than the view in its middle rather than in the top-left corner.
+        /// Keeps a picture smaller than the safe area in its middle rather than in the top-left corner.
         private func center(_ scrollView: UIScrollView) {
-            let horizontal = max(0, (scrollView.bounds.width - scrollView.contentSize.width) / 2)
-            let vertical = max(0, (scrollView.bounds.height - scrollView.contentSize.height) / 2)
-            scrollView.contentInset = UIEdgeInsets(top: vertical, left: horizontal, bottom: vertical, right: horizontal)
+            let safe = safeBounds(of: scrollView)
+            let insets = scrollView.safeAreaInsets
+            let horizontal = max(0, (safe.width - scrollView.contentSize.width) / 2)
+            let vertical = max(0, (safe.height - scrollView.contentSize.height) / 2)
+            scrollView.contentInset = UIEdgeInsets(
+                top: insets.top + vertical,
+                left: insets.left + horizontal,
+                bottom: insets.bottom + vertical,
+                right: insets.right + horizontal
+            )
         }
     }
 
