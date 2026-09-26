@@ -127,7 +127,7 @@ dest() { case "$1" in
   iPadOS)       echo "platform=iOS Simulator,name=iPad Pro 13-inch (M4),OS=26.5" ;;
   macOS)        echo "platform=macOS,arch=arm64" ;;
   macCatalyst)  echo "platform=macOS,arch=arm64,variant=Mac Catalyst" ;;
-  watchOS)      echo "platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)" ;;
+  watchOS)      echo "platform=watchOS Simulator,name=Apple Watch Series 11 (46mm),OS=26.5" ;;
   visionOS)     echo "platform=visionOS Simulator,name=Apple Vision Pro" ;;
   tvOS)         echo "platform=tvOS Simulator,name=Apple TV 4K (3rd generation)" ;;
   *) echo "unknown platform: $1" >&2; exit 2 ;;
